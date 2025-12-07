@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMI Calculator</title>
+
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/edent/SuperTinyIcons/images/png/apple-4.png" type="image/png">
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.3s, color 0.3s;
+}
+
+body.dark {
+    background: #1e1e1e;
+    color: white;
+}
+
+.box {
+    background: white;
+    padding: 20px 30px;
+    width: 90%;
+    max-width: 380px;
+    height: 440px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.25);
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    transition: background 0.3s, color 0.3s;
+}
+
+body.dark .box {
+    background: #2c2c2c;
+    color: white;
+    box-shadow: 0 0 15px rgba(255,255,255,0.15);
+}
+
+.input-container {
+    position: relative;
+    width: 90%;
+    margin: 8px 0;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+body.dark input {
+    background: #444;
+    color: white;
+    border-color: #666;
+}
+
+input:focus {
+    border-color: #0078ff;
+    outline: none;
+    box-shadow: 0 0 6px rgba(0, 120, 255, 0.5);
+}
+
+/* Native number input arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: inner-spin-button;
+    background: #eee;
+    border-radius: 4px;
+    width: 18px;
+    height: 30px;
+}
+
+body.dark input[type=number]::-webkit-inner-spin-button,
+body.dark input[type=number]::-webkit-outer-spin-button {
+    background: #555;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Plain + text buttons */
+.adjust-btn {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    color: #0078ff;
+    border: none;
+    font-weight: bold;
+    font-size: 20px;
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+}
+
+#calculate-btn {
+    width: 90%;
+    padding: 16px 0;
+    font-size: 18px;
+    border-radius: 8px;
+    border: none;
+    background: #0078ff;
+    color: white;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#calculate-btn:hover {
+    background: #005fcc;
+}
+
+#unit-toggle, #dark-toggle {
+    position: absolute;
+    bottom: 10px;
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#unit-toggle {
+    right: 10px;
+    background: #444;
+    color: white;
+}
+
+#dark-toggle {
+    left: 10px;
+    background: #444;
+    color: white;
+}
+
+#unit-toggle:hover, #dark-toggle:hover {
+    background: #222;
+}
+
+#result {
+    margin-top: 12px;
+    margin-bottom: 70px;
+    font-weight: bold;
+    text-align: center;
+}
+
+#result .bmi-text {
+    font-weight: bold;
+    font-size: 20px;
+    color: black;
+}
+
+body.dark #result .bmi-text {
+    color: white;
+}
+
+#result .category-text {
+    font-size: 22px;
+    margin-top: 8px; /* slightly raised */
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+    <h2>BMI Calculator</h2>
+
+    <label id="weight-label">Weight (kg)</label>
+    <div class="input-container">
+        <input id="weight" type="number" step="0.1" min="0">
+        <button class="adjust-btn" onclick="adjustValue('weight', 0.1)">+</button>
+    </div>
+
+    <label id="height-label">Height (cm)</label>
+    <div class="input-container">
+        <input id="height" type="number" step="1" min="0">
+        <button class="adjust-btn" onclick="adjustValue('height', 1)">+</button>
+    </div>
+
+    <button id="calculate-btn" onclick="calculateBMI()">Calculate</button>
+
+    <div id="result"></div>
+
+    <button id="unit-toggle" onclick="toggleUnits()">Switch to US units</button>
+    <button id="dark-toggle" onclick="toggleDark()">Dark Mode</button>
+</div>
+
+<script>
+let useMetric = true;
+
+// Adjust input by step
+function adjustValue(id, step) {
+    const input = document.getElementById(id);
+    let value = parseFloat(input.value) || 0;
+    value = Math.round((value + step) * 10) / 10;
+    input.value = value;
+}
+
+// Restrict input to numbers and dot
+function restrictInput(e) {
+    this.value = this.value.replace(/[^0-9.]/g, '');
+}
+document.getElementById("weight").addEventListener("input", restrictInput);
+document.getElementById("height").addEventListener("input", restrictInput);
+
+// Prevent pasting letters
+function preventPaste(e) {
+    let paste = (e.clipboardData || window.clipboardData).getData('text');
+    if (/[^0-9.]/.test(paste)) e.preventDefault();
+}
+document.getElementById("weight").addEventListener("paste", preventPaste);
+document.getElementById("height").addEventListener("paste", preventPaste);
+
+function isDarkMode() { return document.body.classList.contains("dark"); }
+
+function toggleUnits() {
+    useMetric = !useMetric;
+    if (useMetric) {
+        document.getElementById("weight-label").textContent = "Weight (kg)";
+        document.getElementById("height-label").textContent = "Height (cm)";
+        document.getElementById("unit-toggle").textContent = "Switch to US units";
+        document.getElementById("weight").step = "0.1";
+        document.getElementById("height").step = "1";
+    } else {
+        document.getElementById("weight-label").textContent = "Weight (lbs)";
+        document.getElementById("height-label").textContent = "Height (inches)";
+        document.getElementById("unit-toggle").textContent = "Switch to Metric units";
+        document.getElementById("weight").step = "0.1";
+        document.getElementById("height").step = "0.1";
+    }
+    document.getElementById("result").innerHTML = "";
+}
+
+function toggleDark() {
+    document.body.classList.toggle("dark");
+    document.getElementById("dark-toggle").textContent = isDarkMode() ? "Light Mode" : "Dark Mode";
+    if (document.getElementById("result").innerHTML !== "") calculateBMI();
+}
+
+function calculateBMI() {
+    let weight = parseFloat(document.getElementById("weight").value);
+    let height = parseFloat(document.getElementById("height").value);
+
+    if (!weight || !height) {
+        document.getElementById("result").innerHTML = "<p>Please enter valid numbers.</p>";
+        return;
+    }
+
+    let bmi = useMetric ? weight / ((height / 100) ** 2) : (weight / (height ** 2)) * 703;
+    bmi = bmi.toFixed(1);
+
+    let category, color;
+    if (bmi < 18.5) { category = "You are underweight."; color = "#c9b400"; }
+    else if (bmi < 25) { category = "You are a healthy weight."; color = "green"; }
+    else if (bmi < 30) { category = "You are overweight."; color = "orange"; }
+    else { category = "You are obese."; color = "red"; }
+
+    const bmiColor = isDarkMode() ? "white" : "black";
+
+    document.getElementById("result").innerHTML = `
+        <p class="bmi-text" style="color:${bmiColor}">Your BMI is ${bmi}</p>
+        <p class="category-text" style="color:${color}">${category}</p>
+    `;
+}
+</script>
+
+</body>
+</html>
